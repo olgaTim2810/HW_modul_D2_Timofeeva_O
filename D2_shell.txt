@@ -1,0 +1,79 @@
+>>> from news.models import *
+1.	Добавим пользователей:
+>>> u1 = User.objects.create_user(username='Dima')  
+>>> u2 = User.objects.create_user(username='Sasha')     
+2.	Добавим авторов:
+>>> Author.objects.create(authorUser=u1)
+>>> Author.objects.create(authorUser=u2)
+3.	Создание категорий:
+>>> Category.objects.create(name='IT')          
+>>> Category.objects.create(name='Politics')          
+>>> Category.objects.create(name='Economy')          
+>>> Category.objects.create(name='Sport')          
+4.	Создание постов:
+>>> author = Author.objects.get(id=1)
+>>> author2 = Author.objects.get(id=2)
+>>> author1 = Author.objects.get(id=1)
+>>> Post.objects.create(author=author1, categoryType='NW', title='Название первой новости', text='какой-то текст для первой новости')  
+>>> Post.objects.create(author=author1, categoryType='AR', title='Название первой статьи', text='какой-то текст для первой статьи')     
+>>> Post.objects.create(author=author2, categoryType='AR', title='Название второй статьи', text='какой-то текст для статьи статьи')  
+5.	Добавим категории статьям:
+>>> Post.objects.get(id=1).postCategory.add(Category.objects.get(id=1))  
+>>> Post.objects.get(id=1).postCategory.add(Category.objects.get(id=2))      
+>>> Post.objects.get(id=2).postCategory.add(Category.objects.get(id=2)) 
+>>> Post.objects.get(id=2).postCategory.add(Category.objects.get(id=3)) 
+>>> Post.objects.get(id=3).postCategory.add(Category.objects.get(id=4))  
+>>> Post.objects.get(id=3).postCategory.add(Category.objects.get(id=2))
+6.	Создадим комментарии к постам:
+>>> Comment.objects.create(commentPost=Post.objects.get(id=1), commentUser=Author.objects.get(id=1).authorUser,text='первый комментарий')   
+>>> Comment.objects.create(commentPost=Post.objects.get(id=1), commentUser=Author.objects.get(id=2).authorUser,text='второй комментарий')
+>>> Comment.objects.create(commentPost=Post.objects.get(id=2), commentUser=Author.objects.get(id=1).authorUser,text='третий комментарий') 
+>>> Comment.objects.create(commentPost=Post.objects.get(id=3), commentUser=Author.objects.get(id=1).authorUser,text='четвертый комментарий') 
+7.	Лайки/дислайки:
+>>> Comment.objects.get(id=1).like()
+>>> Comment.objects.get(id=2).like()
+>>> Comment.objects.get(id=3).dislike()
+>>> Comment.objects.get(id=3).like()
+>>> Comment.objects.get(id=4).like()
+>>> Comment.objects.get(id=4).like()
+>>> Comment.objects.get(id=4).like()
+>>> Comment.objects.get(id=4).like()
+8.	Проверим рейтинги пользователей:
+Рейтинги комментариев:
+>>> Comment.objects.get(id=1).rating
+1
+>>> Comment.objects.get(id=2).rating 
+1
+>>> Comment.objects.get(id=3).rating 
+0
+>>> Comment.objects.get(id=4).rating 
+4
+Рейтинги постов:
+>>> Post.objects.get(id=1).like()
+>>> Post.objects.get(id=2).like()
+>>> Post.objects.get(id=2).like()
+>>> Post.objects.get(id=2).like()
+>>> Post.objects.get(id=3).like()
+Проверим рейтинги авторов (рассчитывается по формуле: лайк/дислайк пост*3 + лайк/дислайк комментарий):
+>>> a = Author.objects.get(id=1)
+>>> a.update_rating()
+>>> a.ratingAuthor
+11
+>>> b = Author.objects.get(id=2) 
+>>> b.update_rating()
+>>> b.ratingAuthor
+4
+9.	Имя и рейтинг лучшего пользователя:
+>>> bestuser = Author.objects.order_by('-ratingAuthor')[0:1].values('authorUser__username', 'ratingAuthor') 
+>>>  bestuser
+<QuerySet [{'authorUser__username': 'Dima', 'ratingAuthor': 11}]>
+10.	Дата добавления, username автора, рейтинг, заголовок и превью лучшей статьи:
+>>> Post.objects.order_by('-rating').values('dateCreation', 'author__authorUser__username', 'rating', 'title')[0]
+{'dateCreation': datetime.datetime(2023, 1, 7, 8, 57, 8, 804197, tzinfo=datetime.timezone.utc), 'author__authorUser__username': 'Dima', 'rating': 3, 'title': 'Название первой статьи'}
+>>> Post.objects.order_by('-rating')[0].preview()
+'какой-то текст для первой статьи...'
+11.	Вывести все комментарии (дата, пользователь, рейтинг, текст) к этой (лучшей) статье:
+>>> post2 = Post.objects.get(id=2)
+>>> post2.comment_set.all().values('dateCreation', 'commentUser','rating', 'text')
+<QuerySet [{'dateCreation': datetime.datetime(2023, 1, 7, 9, 23, 27, 493740, tzinfo=datetime.timezone.utc), 'commentUser': 1, 'rating': 0, 'text': 'третий комментарий'}]>
+
